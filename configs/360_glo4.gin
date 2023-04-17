@@ -3,7 +3,7 @@ Config.near = 0.2
 Config.far = 1e6
 Config.factor = 4
 
-Model.raydist_fn = @jnp.reciprocal
+Model.raydist_fn = @torch.reciprocal
 Model.num_glo_features = 4
 Model.opaque_background = True
 
