@@ -292,8 +292,8 @@ class Model(nn.Module):
         rendering['ray_rgbs'] = (rgb.reshape((-1,) + rgb.shape[-2:]))[:n, :, :]
 
       renderings.append(rendering)
-      ray_results['sdist'] = jnp.copy(sdist)
-      ray_results['weights'] = jnp.copy(weights)
+      ray_results['sdist'] = jnp.array(sdist, copy=True)
+      ray_results['weights'] = jnp.array(weights, copy=True)
       ray_history.append(ray_results)
 
     if compute_extras:

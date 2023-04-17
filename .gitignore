@@ -6,3 +6,6 @@ tests/__pycache__/
 .vscode/
 .idea/
 __MACOSX/
+
+outputs
+data

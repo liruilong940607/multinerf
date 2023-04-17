@@ -437,6 +437,7 @@ def _compute_residual_and_jacobian(
     p2: float = 0.0,
 ) -> Tuple[_Array, _Array, _Array, _Array, _Array, _Array]:
   """Auxiliary function of radial_and_tangential_undistort()."""
+  assert k4 == 0.0, 'this function has issues with k4 != 0.0'
   # Adapted from https://github.com/google/nerfies/blob/main/nerfies/camera.py
   # let r(x, y) = x^2 + y^2;
   #     d(x, y) = 1 + k1 * r(x, y) + k2 * r(x, y) ^2 + k3 * r(x, y)^3 +

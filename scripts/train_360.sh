@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=4
 
-SCENE=gardenvase
-EXPERIMENT=360
-DATA_DIR=/usr/local/google/home/barron/tmp/nerf_data/nerf_real_360
-CHECKPOINT_DIR=/usr/local/google/home/barron/tmp/nerf_results/"$EXPERIMENT"/"$SCENE"
+SCENE=garden
+EXPERIMENT=360_v2
+DATA_DIR=./data/360_v2/
+CHECKPOINT_DIR=./outputs/"$EXPERIMENT"/"$SCENE"
 
 # If running one of the indoor scenes, add
 # --gin_bindings="Config.factor = 2"
@@ -28,4 +28,9 @@ python -m train \
   --gin_configs=configs/360.gin \
   --gin_bindings="Config.data_dir = '${DATA_DIR}/${SCENE}'" \
   --gin_bindings="Config.checkpoint_dir = '${CHECKPOINT_DIR}'" \
-  --logtostderr
+  --logtostderr \
+  --gin_bindings="Config.batch_size = 2048" \
+  --gin_bindings="Config.print_every = 10" \
+  --gin_bindings="Config.checkpoint_every = 1000" \
+  --gin_bindings="Config.train_render_every = 1000" \
+  --gin_bindings="Config.render_chunk_size = 2048"
