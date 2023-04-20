@@ -19,7 +19,6 @@ import functools
 from typing import Any, Callable, Dict, MutableMapping, Optional, Text, Tuple
 
 import torch
-from optree import tree_map, tree_reduce, tree_sum
 
 from . import (
     camera_utils,
@@ -32,39 +31,6 @@ from . import (
     stepfun,
     utils,
 )
-
-
-def tree_norm_sq(tree):
-    return tree_sum(tree_map(lambda x: torch.sum(x**2), tree))
-
-
-def tree_norm(tree):
-    return torch.sqrt(tree_norm_sq(tree))
-
-
-def tree_abs_max(tree):
-    return tree_reduce(
-        lambda x, y: torch.maximum(x, torch.max(torch.abs(y))),
-        tree,
-        0,
-    )
-
-
-def tree_len(tree):
-    return tree_sum(tree_map(lambda z: torch.prod(torch.tensor(z.shape)), tree))
-
-
-def summarize_tree(tree, fn, ancestry=(), max_depth=3):
-    """Flatten 'tree' while 'fn'-ing values and formatting keys like/this."""
-    stats = {}
-    for k, v in tree.items():
-        name = ancestry + (k,)
-        stats["/".join(name)] = fn(v)
-        if hasattr(v, "items") and len(ancestry) < (max_depth - 1):
-            stats.update(
-                summarize_tree(v, fn, ancestry=name, max_depth=max_depth)
-            )
-    return stats
 
 
 def compute_data_loss(batch, renderings, rays, config):
@@ -199,36 +165,6 @@ def predicted_normal_loss(model, ray_history, config):
     return total_loss
 
 
-def clip_gradients(grad, config):
-    """Clips gradients of each MLP individually based on norm and max value."""
-    # Clip the gradients of each MLP individually.
-    grad_clipped = {"params": {}}
-    for k, g in grad["params"].items():
-        # Clip by value.
-        if config.grad_max_val > 0:
-            g = tree_map(
-                lambda z: torch.clamp(
-                    z, -config.grad_max_val, config.grad_max_val
-                ),
-                g,
-            )
-
-        # Then clip by norm.
-        if config.grad_max_norm > 0:
-            mult = torch.clamp(
-                config.grad_max_norm
-                / (torch.finfo(torch.float32).eps + tree_norm(g)),
-                max=1.0,
-            )
-            g = tree_map(
-                lambda z: mult * z, g
-            )  # pylint:disable=cell-var-from-loop
-
-        grad_clipped["params"][k] = g
-    grad = type(grad)(grad_clipped)
-    return grad
-
-
 def create_train_step(
     model: models.Model,
     config: configs.Config,
@@ -312,15 +248,21 @@ def create_train_step(
                     model, ray_history, config
                 )
 
-            # stats["weight_l2s"] = summarize_tree(
-            #     variables["params"], tree_norm_sq
-            # )
+            stats["weight_l2s"] = {
+                # naive weight decay:
+                k: (p**2).sum()
+                for k, p in model.named_parameters()
+                # zipnerf uses this for ngp module:
+                # k: (p**2).mean() for k, p in model.named_parameters()
+            }
 
-            # if config.weight_decay_mults:
-            #     it = config.weight_decay_mults.items
-            #     losses["weight"] = torch.sum(
-            #         torch.cat([m * stats["weight_l2s"][k] for k, m in it()])
-            #     )
+            if config.weight_decay_mults:
+                losses["weight"] = sum(
+                    [
+                        config.weight_decay_mults.get(k.split(".")[0], 0.0) * v
+                        for k, v in stats["weight_l2s"].items()
+                    ]
+                )
 
             stats["loss"] = sum(list(losses.values()))
             stats["losses"] = losses
@@ -329,38 +271,10 @@ def create_train_step(
 
         stats = loss_fn()
 
-        # loss_grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
-        # (_, stats), grad = loss_grad_fn(state.params)
-
-        # pmean = lambda x: jax.lax.pmean(x, axis_name="batch")
-        # grad = pmean(grad)
-        # stats = pmean(stats)
-
-        # stats["grad_norms"] = summarize_tree(grad["params"], tree_norm)
-        # stats["grad_maxes"] = summarize_tree(grad["params"], tree_abs_max)
-
-        # grad = clip_gradients(grad, config)
-
-        # grad = tree_map(jnp.nan_to_num, grad)
-
-        # new_state = state.apply_gradients(grads=grad)
-
-        # opt_delta = tree_map(
-        #     lambda x, y: x - y, new_state, state
-        # ).params["params"]
-        # stats["opt_update_norms"] = summarize_tree(opt_delta, tree_norm)
-        # stats["opt_update_maxes"] = summarize_tree(opt_delta, tree_abs_max)
-
         stats["psnrs"] = image.mse_to_psnr(stats["mses"])
         stats["psnr"] = stats["psnrs"][-1]
         return stats
 
-    # train_pstep = jax.pmap(
-    #     train_step,
-    #     axis_name="batch",
-    #     in_axes=(0, 0, 0, None, None),
-    #     donate_argnums=(0, 1),
-    # )
     return train_step
 
 

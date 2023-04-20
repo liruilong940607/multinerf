@@ -1,8 +1,12 @@
-# MultiNeRF: A Code Release for Mip-NeRF 360, Ref-NeRF, and RawNeRF
+# MultiNeRF: A PyTorch Implementation for Mip-NeRF 360, Ref-NeRF, and RawNeRF
 
-*This is not an officially supported Google product.*
+## What's New?
+*This is a line-by-line transfer of the [official repo](https://github.com/google-research/multinerf) from JAX to PyTorch*. Though it is a complete transfer of all codes including unit tests, we only verified with the script `train_360.sh` and `train_blender.sh`. If you encountered issues
+with running other scripts, feel free to open an issues.
 
-This repository contains the code release for three CVPR 2022 papers:
+# 
+
+This repository contains the PyTorch Implementation for three CVPR 2022 papers:
 [Mip-NeRF 360](https://jonbarron.info/mipnerf360/),
 [Ref-NeRF](https://dorverbin.github.io/refnerf/), and
 [RawNeRF](https://bmild.github.io/rawnerf/).
@@ -12,15 +16,12 @@ mip-NeRF 360 implementation. As such, this codebase should exactly
 reproduce the results shown in mip-NeRF 360, but may differ slightly when
 reproducing Ref-NeRF or RawNeRF results.
 
-This implementation is written in [JAX](https://github.com/google/jax), and
-is a fork of [mip-NeRF](https://github.com/google/mipnerf).
-This is research code, and should be treated accordingly.
 
 ## Setup
 
 ```
 # Clone the repo.
-git clone https://github.com/google-research/multinerf.git
+git clone https://github.com/liruilong940607/multinerf
 cd multinerf
 
 # Make a conda environment.
@@ -40,7 +41,6 @@ git clone https://github.com/rmbrualla/pycolmap.git ./internal/pycolmap
 # Confirm that all the unit tests pass.
 ./scripts/run_all_unit_tests.sh
 ```
-You'll probably also need to update your JAX installation to support GPUs or TPUs.
 
 ## Running
 
@@ -48,9 +48,9 @@ Example scripts for training, evaluating, and rendering can be found in
 `scripts/`. You'll need to change the paths to point to wherever the datasets
 are located. [Gin](https://github.com/google/gin-config) configuration files
 for our model and some ablations can be found in `configs/`.
-After evaluating on the test set of each scene in one of the datasets, you can
+<del>After evaluating on the test set of each scene in one of the datasets, you can
 use `scripts/generate_tables.ipynb` to produce error metrics across all scenes
-in the same format as was used in tables in the paper.
+in the same format as was used in tables in the paper.</dev>
 
 ### OOM errors
 

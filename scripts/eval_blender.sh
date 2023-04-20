@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export CUDA_VISIBLE_DEVICES=0
+
 
 SCENE=ficus
 EXPERIMENT=blender
-DATA_DIR=/usr/local/google/home/barron/tmp/nerf_data/dors_nerf_synthetic
-CHECKPOINT_DIR=/usr/local/google/home/barron/tmp/nerf_results/"$EXPERIMENT"/"$SCENE"
+DATA_DIR=./data/dors_nerf_synthetic
+CHECKPOINT_DIR=./outputs/"$EXPERIMENT"/"$SCENE"
 
 python -m eval \
   --gin_configs=configs/blender_256.gin \

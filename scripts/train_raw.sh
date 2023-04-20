@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export CUDA_VISIBLE_DEVICES=0
+
 
 SCENE=nightpiano
 EXPERIMENT=raw
-DATA_DIR=/usr/local/google/home/barron/tmp/nerf_data/rawnerf/scenes
-CHECKPOINT_DIR=/usr/local/google/home/barron/tmp/nerf_results/"$EXPERIMENT"/"$SCENE"
+DATA_DIR=./data/rawnerf/scenes
+CHECKPOINT_DIR=./outputs/"$EXPERIMENT"/"$SCENE"
 
 rm "$CHECKPOINT_DIR"/*
 python -m train \

@@ -36,8 +36,8 @@ from . import camera_utils, configs
 from . import image as lib_image
 from . import raw_utils, utils
 
-sys.path.insert(0, "pycolmap")
-sys.path.insert(0, "pycolmap/pycolmap")
+sys.path.insert(0, "internal/pycolmap")
+sys.path.insert(0, "internal/pycolmap/pycolmap")
 import pycolmap
 
 
@@ -99,8 +99,8 @@ class NeRFSceneManager(pycolmap.SceneManager):
         bottom = torch.tensor([0.0, 0.0, 0.0, 1.0]).reshape(1, 4)
         for k in imdata:
             im = imdata[k]
-            rot = torch.tensor(im.R())
-            trans = torch.tensor(im.tvec).reshape(3, 1)
+            rot = torch.tensor(im.R(), dtype=torch.float32)
+            trans = torch.tensor(im.tvec, dtype=torch.float32).reshape(3, 1)
             w2c = torch.cat([torch.cat([rot, trans], 1), bottom], dim=0)
             w2c_mats.append(w2c)
         w2c_mats = torch.stack(w2c_mats, dim=0).float()
@@ -306,7 +306,7 @@ class Dataset(threading.Thread, metaclass=abc.ABCMeta):
         if self.render_path:
             if config.render_path_file is not None:
                 with utils.open_file(config.render_path_file, "rb") as fp:
-                    render_poses = torch.from_numpy(np.load(fp))
+                    render_poses = torch.from_numpy(np.load(fp)).float()
                 self.camtoworlds = render_poses
             if config.render_resolution is not None:
                 self.width, self.height = config.render_resolution
@@ -559,7 +559,7 @@ class Blender(Dataset):
                 image = utils.load_img(fprefix + f)
                 if config.factor > 1:
                     image = lib_image.downsample(image, config.factor)
-                return torch.from_numpy(image)
+                return torch.from_numpy(image).float()
 
             if self._use_tiffs:
                 channels = [
@@ -639,7 +639,9 @@ class LLFF(Dataset):
             poses = poses[inds]
 
         # Scale the inverse intrinsics matrix by the image downsampling factor.
-        pixtocam = pixtocam @ torch.diag(torch.tensor([factor, factor, 1.0]))
+        pixtocam = pixtocam @ torch.diag(
+            torch.tensor([factor, factor, 1.0])
+        )
         self.pixtocams = pixtocam.float()
         self.focal = 1.0 / self.pixtocams[0, 0]
         self.distortion_params = distortion_params
@@ -672,7 +674,9 @@ class LLFF(Dataset):
             image_paths = [
                 os.path.join(image_dir, colmap_to_image[f]) for f in image_names
             ]
-            images = [torch.from_numpy(utils.load_img(x)) for x in image_paths]
+            images = [
+                torch.from_numpy(utils.load_img(x)).float() for x in image_paths
+            ]
             images = torch.stack(images, dim=0) / 255.0
 
             # EXIF data is usually only present in the original JPEG images.
@@ -683,7 +687,7 @@ class LLFF(Dataset):
             self.exifs = exifs
             if "ExposureTime" in exifs[0] and "ISOSpeedRatings" in exifs[0]:
                 gather_exif_value = lambda k: torch.tensor(
-                    [float(x[k]) for x in exifs]
+                    [float(x[k]) for x in exifs], dtype=torch.float32
                 )
                 shutters = gather_exif_value("ExposureTime")
                 isos = gather_exif_value("ISOSpeedRatings")
@@ -693,10 +697,10 @@ class LLFF(Dataset):
         posefile = os.path.join(self.data_dir, "poses_bounds.npy")
         if utils.file_exists(posefile):
             with utils.open_file(posefile, "rb") as fp:
-                poses_arr = torch.from_numpy(np.load(fp))
+                poses_arr = torch.from_numpy(np.load(fp)).float()
             bounds = poses_arr[:, -2:]
         else:
-            bounds = torch.tensor([0.01, 1.0])
+            bounds = torch.tensor([0.01, 1.0], dtype=torch.float32)
         self.colmap_to_world_transform = torch.eye(4)
 
         # Separate out 360 versus forward facing scenes.
@@ -707,7 +711,7 @@ class LLFF(Dataset):
             scale = 1.0 / (bounds.min() * 0.75)
             poses[:, :3, 3] *= scale
             self.colmap_to_world_transform = torch.diag(
-                torch.tensor([scale] * 3 + [1])
+                torch.tensor([scale] * 3 + [1], dtype=torch.float32)
             )
             bounds *= scale
             # Recenter poses.
@@ -799,7 +803,7 @@ class TanksAndTemplesNerfPP(Dataset):
             mats = np.array([load_fn(utils.open_file(f, "rb")) for f in files])
             if shape is not None:
                 mats = mats.reshape(mats.shape[:1] + shape)
-            mats = torch.from_numpy(mats)
+            mats = torch.from_numpy(mats).float()
             return mats
 
         poses = load_files("pose", np.loadtxt, (4, 4))
@@ -860,11 +864,12 @@ class TanksAndTemplesFVS(Dataset):
         images = (
             np.array([np.array(Image.open(open_fn(f))) for f in files]) / 255.0
         )
-        images = torch.from_numpy(images)
+        images = torch.from_numpy(images).float()
 
         names = ["Ks", "Rs", "ts"]
         intrinsics, rot, trans = (
-            torch.from_numpy(np.load(open_fn(f"{n}.npy"))) for n in names
+            torch.from_numpy(np.load(open_fn(f"{n}.npy"))).float()
+            for n in names
         )
 
         # Convert poses from colmap world-to-cam into our cam-to-world.
@@ -941,7 +946,7 @@ class DTU(Dataset):
             image = utils.load_img(fname) / 255.0
             if config.factor > 1:
                 image = lib_image.downsample(image, config.factor)
-            image = torch.from_numpy(image)
+            image = torch.from_numpy(image).float()
             images.append(image)
 
             # Load projection matrix from file.
@@ -951,7 +956,7 @@ class DTU(Dataset):
 
             # Decompose projection matrix into pose and camera matrix.
             camera_mat, rot_mat, t = (
-                torch.from_numpy(x)
+                torch.from_numpy(x).float()
                 for x in cv2.decomposeProjectionMatrix(projection)[:3]
             )
             camera_mat = camera_mat / camera_mat[2, 2]

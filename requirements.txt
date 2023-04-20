@@ -7,6 +7,7 @@ rawpy
 mediapy
 matplotlib
 absl-py
+scipy
+torch==2.0.0
 # would be integrated into pytorch: https://github.com/pytorch/pytorch/pull/93139
 optree==0.9.0
-torch==2.0.0

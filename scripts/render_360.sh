@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export CUDA_VISIBLE_DEVICES=0
+
 
 SCENE=gardenvase
 EXPERIMENT=360
-DATA_DIR=/usr/local/google/home/barron/tmp/nerf_data/nerf_real_360
-CHECKPOINT_DIR=/usr/local/google/home/barron/tmp/nerf_results/"$EXPERIMENT"/"$SCENE"
+DATA_DIR=./data/360_v2
+CHECKPOINT_DIR=./outputs/"$EXPERIMENT"/"$SCENE"
 
 python -m render \
   --gin_configs=configs/360.gin \

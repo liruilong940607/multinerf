@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export CUDA_VISIBLE_DEVICES=0
+
 
 SCENE=flower
 EXPERIMENT=llff
-DATA_DIR=/usr/local/google/home/barron/tmp/nerf_data/nerf_llff_data
-CHECKPOINT_DIR=/usr/local/google/home/barron/tmp/nerf_results/"$EXPERIMENT"/"$SCENE"
+DATA_DIR=./data/nerf_llff_data
+CHECKPOINT_DIR=./outputs/"$EXPERIMENT"/"$SCENE"
 
 python -m eval \
   --gin_configs=configs/llff_256.gin \

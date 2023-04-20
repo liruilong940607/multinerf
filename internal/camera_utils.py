@@ -450,7 +450,8 @@ def intrinsic_matrix(fx: float, fy: float, cx: float, cy: float) -> Tensor:
             [fx, 0, cx],
             [0, fy, cy],
             [0, 0, 1.0],
-        ]
+        ],
+        dtype=torch.float32,
     )
 
 
@@ -619,8 +620,7 @@ def pixels_to_rays(
     )
 
     # For jax, need to specify high-precision matmul.
-    matmul = torch.matmul
-    mat_vec_mul = lambda A, b: matmul(A, b[..., None])[..., 0]
+    mat_vec_mul = lambda A, b: torch.matmul(A, b[..., None])[..., 0]
 
     # Apply inverse intrinsic matrices.
     camera_dirs_stacked = mat_vec_mul(pixtocams, pixel_dirs_stacked)
@@ -651,7 +651,7 @@ def pixels_to_rays(
         )
 
     # Flip from OpenCV to OpenGL coordinate system.
-    camera_dirs_stacked = matmul(
+    camera_dirs_stacked = torch.matmul(
         camera_dirs_stacked, torch.diag(torch.tensor([1.0, -1.0, -1.0]))
     )
 

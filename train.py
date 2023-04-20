@@ -25,10 +25,9 @@ from absl import app
 from optree import tree_map
 from torch.utils import tensorboard
 
-from multinerf import configs, datasets, image, models, train_utils, utils, vis
+from internal import configs, datasets, image, models, train_utils, utils, vis
 
 configs.define_common_flags()
-# jax.config.parse_flags_with_absl()
 
 TIME_PRECISION = 1000  # Internally represent integer times in milliseconds.
 
@@ -117,6 +116,14 @@ def main(unused_argv):
             param["lr"] = learning_rate
         optim.zero_grad()
         stats["loss"].backward()
+        if config.grad_max_val > 0:
+            torch.nn.utils.clip_grad_value_(
+                model.parameters(), config.grad_max_val
+            )
+        if config.grad_max_norm > 0:
+            torch.nn.utils.clip_grad_norm_(
+                model.parameters(), config.grad_max_norm
+            )
         optim.step()
 
         # Log training summaries. This is put behind a host_id check because in

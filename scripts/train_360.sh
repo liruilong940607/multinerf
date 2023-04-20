@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export CUDA_VISIBLE_DEVICES=4
+
 
 SCENE=garden
 EXPERIMENT=360_v2
@@ -28,9 +28,4 @@ python -m train \
   --gin_configs=configs/360.gin \
   --gin_bindings="Config.data_dir = '${DATA_DIR}/${SCENE}'" \
   --gin_bindings="Config.checkpoint_dir = '${CHECKPOINT_DIR}'" \
-  --logtostderr \
-  --gin_bindings="Config.batch_size = 2048" \
-  --gin_bindings="Config.print_every = 10" \
-  --gin_bindings="Config.checkpoint_every = 1000" \
-  --gin_bindings="Config.train_render_every = 1000" \
-  --gin_bindings="Config.render_chunk_size = 2048"
+  --logtostderr
